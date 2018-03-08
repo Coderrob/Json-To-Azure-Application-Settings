@@ -30,7 +30,9 @@ namespace Formatter
         {
             try
             {
-                return _configurationRoot.AsEnumerable().ToList();
+                return _configurationRoot.AsEnumerable()
+                                         .Where(pair => !string.IsNullOrEmpty(pair.Value))
+                                         .ToList();
             }
             catch (Exception ex)
             {
