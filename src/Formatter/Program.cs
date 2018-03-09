@@ -1,39 +1,55 @@
 ﻿using System;
-using System.IO;
-using NLog;
+using NDesk.Options;
 
 namespace Formatter
 {
     internal class Program
     {
-        private static readonly ILogger Logger = LogManager.GetCurrentClassLogger();
-
-        private static void Main(string[] args)
+        public static void Main(string[] args)
         {
+            var showHelp = false;
+            string output = null;
+            string input = null;
+
+            var p = new OptionSet
+            {
+                { "i=", "The input file", v => input = v },
+                { "o=", "Specify the output file", v => output = v },
+                { "h|help", "show this message and exit", v => showHelp = v != null }
+            };
+
             try
             {
-                // args [0] - input file
-                // args [1] - output file
+                p.Parse(args);
 
-                if (args.Length != 2)
-                {
-                    Console.WriteLine("Expected format of: <input-file-argument> <output-file-argument>");
-                    return;
-                }
-
-                if (!File.Exists(args[0]))
-                {
-                    Console.WriteLine($"File not found at path '{args[0]}'");
-                    return;
-                }
-
-                new JsonFormatter(args[0]).WriteToFile(args[1]).Wait();
+                new JsonFormatter(input).WriteToFile(output).Wait();
             }
-            catch (Exception ex)
+            catch (OptionException e)
             {
-                Logger.Error(ex, $"Failed to process settings file. {ex.Message}");
-                Console.WriteLine("Failed to process settings file.");
+                Console.Write("formatter: ");
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Try `formatter --help' for more information.");
+                return;
             }
+
+            if (showHelp)
+            {
+                ShowHelp(p);
+                return;
+            }
+
+            Console.WriteLine("Options:");
+            Console.WriteLine("\t Input File: {0}", input);
+            Console.WriteLine("\tOuptut File: {0}", output);
+        }
+
+        private static void ShowHelp(OptionSet p)
+        {
+            Console.WriteLine("Usage: formatter [OPTIONS]+");
+            Console.WriteLine("Program to create a comma separated list of settings in Azure app settings formatting.");
+            Console.WriteLine();
+            Console.WriteLine("Options:");
+            p.WriteOptionDescriptions(Console.Out);
         }
     }
 }
