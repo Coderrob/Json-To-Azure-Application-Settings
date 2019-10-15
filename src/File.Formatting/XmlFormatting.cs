@@ -3,16 +3,21 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
-using NLog;
+using Microsoft.Extensions.Logging;
 
-namespace Formatter
+namespace FileFormatting
 {
-    public class JsonFormatter : Formatter
+    public class XmlFormatting : Formatter
     {
-        private static readonly ILogger Logger = LogManager.GetCurrentClassLogger();
-        private readonly IConfigurationRoot _configurationRoot;
+        private readonly ILogger<XmlFormatting> _logger;
+        private IConfigurationRoot _configurationRoot;
 
-        public JsonFormatter(string filePath)
+        public XmlFormatting(ILogger<XmlFormatting> logger) : base(logger)
+        {
+            _logger = logger;
+        }
+
+        public override Formatter Load(string filePath)
         {
             if (string.IsNullOrEmpty(filePath))
                 throw new ArgumentNullException(nameof(filePath));
@@ -21,9 +26,11 @@ namespace Formatter
                 throw new Exception($"File not found at provided path '{filePath}'.");
 
             _configurationRoot = new ConfigurationBuilder()
-                                 .AddJsonFile(filePath, false)
-                                 .Build()
-                    ;
+                    .AddXmlFile(filePath, false)
+                    .Build()
+                ;
+
+            return this;
         }
 
         public override IEnumerable<KeyValuePair<string, string>> GetSettings()
@@ -31,12 +38,12 @@ namespace Formatter
             try
             {
                 return _configurationRoot.AsEnumerable()
-                                         .Where(pair => !string.IsNullOrEmpty(pair.Value))
-                                         .ToList();
+                    .Where(pair => !string.IsNullOrEmpty(pair.Value))
+                    .ToList();
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, $"Failed to get configuration settings. {ex.Message}");
+                _logger.LogError(ex, $"Failed to get configuration settings. {ex.Message}");
                 return Enumerable.Empty<KeyValuePair<string, string>>();
             }
         }

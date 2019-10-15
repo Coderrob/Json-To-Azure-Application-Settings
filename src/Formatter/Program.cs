@@ -1,10 +1,23 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using FileFormatting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using NDesk.Options;
 
 namespace Formatter
 {
     internal class Program
     {
+        private static readonly ILoggerFactory LoggerFactory = NullLoggerFactory.Instance;
+
+        private static readonly Dictionary<string, FileFormatting.Formatter> Formatters = new Dictionary<string, FileFormatting.Formatter>
+        {
+            {".json", new JsonFormatting(LoggerFactory.CreateLogger<JsonFormatting>())},
+            {".xml", new XmlFormatting(LoggerFactory.CreateLogger<XmlFormatting>())}
+        };
+
         public static void Main(string[] args)
         {
             var showHelp = false;
@@ -13,16 +26,17 @@ namespace Formatter
 
             var p = new OptionSet
             {
-                { "i=", "The input file", v => input = v },
-                { "o=", "Specify the output file", v => output = v },
-                { "h|help", "show this message and exit", v => showHelp = v != null }
+                {"i=", "The input file", v => input = v},
+                {"o=", "Specify the output file", v => output = v},
+                {"h|help", "show this message and exit", v => showHelp = v != null}
             };
 
             try
             {
                 p.Parse(args);
 
-                new JsonFormatter(input).WriteToFile(output).Wait();
+                if (Formatters.TryGetValue(Path.GetExtension(input), out var formatter))
+                    formatter.Load(input).WriteToFile(output).Wait();
             }
             catch (OptionException e)
             {
