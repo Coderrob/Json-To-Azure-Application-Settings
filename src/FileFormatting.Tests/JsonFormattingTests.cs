@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using FileFormatting.Tests.TestHelpers;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -14,7 +15,7 @@ namespace FileFormatting.Tests
             _formatting = new JsonFormatting(logger.Object);
         }
 
-        //[Fact]
+        [ManualTesting]
         public async Task LoadJsonSuccessfully()
         {
             await _formatting
